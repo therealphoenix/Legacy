@@ -20,7 +20,7 @@ import com.klidziuk.encoding.enums.ExtensionEnum;
  */
 public class FileVisitor extends SimpleFileVisitor<Path> {
 	private static final Logger logger = Logger.getLogger(FileVisitor.class);
-	private static final String BAD_FILE_EXTENSION = "Bad file extension";
+	private static final String BAD_FILE_EXTENSION_MESSAGE = "Bad file extension for file \"";
 	private static final String EXCEPTION_MESSAGE = "Cannot read extension from this file path.";
 	private static final int VALID_EXTENSION_SIZE = 3;
 	private Charset charset;
@@ -29,7 +29,6 @@ public class FileVisitor extends SimpleFileVisitor<Path> {
 	 * read files in current directory and with specified charset reader
 	 * 
 	 * @ param Path file
-	 * 
 	 * @ param BasicFileAttributes attr
 	 */
 	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -76,13 +75,14 @@ public class FileVisitor extends SimpleFileVisitor<Path> {
 		if(null == fileName || fileName.isEmpty()){
 			throw new IllegalArgumentException(EXCEPTION_MESSAGE); 
 		}
-		String extension = cutFileExtension(fileName);
-		if(BAD_FILE_EXTENSION.equals(extension)){
-			return false;
-		}
-		for(ExtensionEnum enumExtension : ExtensionEnum.values())
-		if (extension.equals(enumExtension.getExtension())) {
-			return true;
+		try {
+			String extension = cutFileExtension(fileName);
+			for(ExtensionEnum enumExtension : ExtensionEnum.values())
+			if (extension.equals(enumExtension.getExtension())) {
+				return true;
+			}
+		} catch (IllegalArgumentException ieax) {
+			logger.error(ieax.getMessage());
 		}
 		return false;
 	}
@@ -92,14 +92,14 @@ public class FileVisitor extends SimpleFileVisitor<Path> {
 	 * @param fileName
 	 * @return file extension
 	 */
-	private String cutFileExtension(String fileName){
+	private String cutFileExtension(String fileName) throws IllegalArgumentException{
 		if(null == fileName || fileName.isEmpty()){
 			throw new IllegalArgumentException(EXCEPTION_MESSAGE); 
 		}
-		int i = fileName.lastIndexOf('.');
-		if (i >= 0 && VALID_EXTENSION_SIZE == fileName.substring(i + 1).length()) {
-		return fileName.substring(i + 1);
+		int extensionSize = fileName.lastIndexOf('.');
+			if (VALID_EXTENSION_SIZE != fileName.substring(extensionSize + 1).length() ) {
+			throw new IllegalArgumentException(BAD_FILE_EXTENSION_MESSAGE + fileName + "\"");
 		}
-		return BAD_FILE_EXTENSION;
+		return fileName.substring(extensionSize + 1);
 	}
 }
